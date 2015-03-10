@@ -1,4 +1,4 @@
-function [newPaths,lsInput] = LRCCompareInput(inputDir,outputDir,ext)
+function [newPaths,lsInput,lsNewInput] = LRCCompareInput(inputDir,outputDir,ext)
 %LRCCOMPAREINPUT Compares list of files previously used to content of
 %inputDir
 %   Detailed explanation goes here
@@ -22,6 +22,7 @@ oldInputNames = {lsOldInput.name}';
 inputNames = {lsInput.name}';
 idxNew = ~ismember(inputNames,oldInputNames);
 newInputNames = inputNames(idxNew(:));
+lsNewInput = lsInput(idxNew(:));
 
 newPaths = fullfile(inputDir,newInputNames);
 
