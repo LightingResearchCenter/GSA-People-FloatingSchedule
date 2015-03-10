@@ -1,5 +1,5 @@
-classdef GSAProcessMode
-    %GSAPROCESSMODE Summary of this class goes here
+classdef LRCProcessMode
+    %LRCPROCESSMODE Summary of this class goes here
     %   Detailed explanation goes here
     
     properties
@@ -7,7 +7,7 @@ classdef GSAProcessMode
     end
     
     methods
-        function obj = GSAProcessMode(modeStr)
+        function obj = LRCProcessMode(modeStr)
             if nargin > 0
                 switch lower(modeStr)
                     case 'update'
