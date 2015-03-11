@@ -20,6 +20,11 @@ function cropData = LRCSingleCDFcrop(origData,bedLog,hFig)
 % After each data set is finished being cropped, it will call RewriteCDF
 % and will save the files to the directory the user selects
 
+% Enable dependencies
+[githubDir,~,~] = fileparts(pwd);
+circadianDir = fullfile(githubDir,'circadian');
+addpath(circadianDir);
+
 hFig.Units = 'normalized';
     
 %% Load the data
@@ -39,7 +44,7 @@ plotcroptitle(subjectID,'');
 
 temp = false(size(timeArray));
 
-[bedTimes, riseTimes] = importbedlog(bedLog);
+[bedTimes, riseTimes] = LRCImportBed(bedLog);
 for i2 = 1:length(bedTimes)
     temp2 = timeArray>bedTimes(i2) & timeArray<riseTimes(i2);
     temp = temp | temp2;
