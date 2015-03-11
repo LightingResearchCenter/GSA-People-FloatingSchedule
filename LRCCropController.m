@@ -51,37 +51,53 @@ switch pModeObj.mode
     otherwise
         error('Unrecognized process mode.')
 end
+iFile = 0;
+try
+    % Construct output file path strings
+    outputNames = {lsNewInput.name}';
+    outputPaths = fullfile(outputDir,outputNames);
 
-% Construct output file path strings
-outputNames = {lsNewInput.name}';
-outputPaths = fullfile(outputDir,outputNames);
-
-% Prepare figure for cropping interface
-hFig = figure;
-hFig.Units = 'normalized';
-hFig.Position = [0.01,0.05,.98,.87];
-% Iterate through files
-nFiles = numel(inputPaths);
-for iFile = 1:nFiles
-    % Select original and cropped file paths
-    thisOrigFile = inputPaths{iFile};
-    thisCropFile = outputPaths{iFile};
-    % Load original data
-    origData = daysimeter12.readcdf(thisOrigFile);
-    % Determine bed log based on subject
-    thisSubject = origData.GlobalAttributes.subjectID;
-    thisBedLog = fullfile(logDir,['bedLog_subject',thisSubject,'.xlsx']);
-    % Crop original data
-    cropData = LRCSingleCDFcrop(origData,thisBedLog,hFig);
-    % Save cropped data
-    if exist(thisCropFile,'file') == 2
-        delete(thisCropFile)
+    % Prepare figure for cropping interface
+    hFig = figure;
+    hFig.Units = 'normalized';
+    hFig.Position = [0.01,0.05,.98,.87];
+    % Iterate through files
+    nFiles = numel(inputPaths);
+    for iFile = 1:nFiles
+        % Select original and cropped file paths
+        thisOrigFile = inputPaths{iFile};
+        thisCropFile = outputPaths{iFile};
+        % Load original data
+        origData = daysimeter12.readcdf(thisOrigFile);
+        % Determine bed log based on subject
+        thisSubject = origData.GlobalAttributes.subjectID;
+        thisBedLog = fullfile(logDir,['bedLog_subject',thisSubject,'.xlsx']);
+        % Crop original data
+        cropData = LRCSingleCDFcrop(origData,thisBedLog,hFig);
+        % Save cropped data
+        if exist(thisCropFile,'file') == 2
+            delete(thisCropFile)
+        end
+        daysimeter12.writecdf(cropData,thisCropFile);
     end
-    daysimeter12.writecdf(cropData,thisCropFile);
-end
-% Close the figure from cropping
-close(hFig);
+    % Close the figure from cropping
+    close(hFig);
 
+catch err
+warning(err.message);
+delete(inputIndexPath);
+if iFile > 1
+    lsMissedInput = lsNewInput(iFile:end);
+    lsNewInput = lsNewInput(1:iFile-1);
+    
+    missedInputNames = {lsMissedInput.name}';
+    inputNames = {lsInput.name}';
+    idxMissed = ismember(inputNames,missedInputNames);
+    lsInput = lsInput(~idxMissed);
+    
+    save(inputIndexPath,'lsInput','lsNewInput');
+end
+end
 
 end
 
