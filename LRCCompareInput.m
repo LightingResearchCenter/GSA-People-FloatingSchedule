@@ -4,7 +4,7 @@ function [newPaths,lsInput,lsNewInput] = LRCCompareInput(inputDir,outputDir,ext)
 %   Detailed explanation goes here
 
 % Find the most recent input index in the outputDir
-lsIndex = dir([outputDir,filesep,'inputIndex*.m']);
+lsIndex = dir([outputDir,filesep,'inputIndex*.mat']);
 if ~isempty(lsIndex)
     [~,idxIndex] = max([lsIndex.datenum]);
     lsIndex = lsIndex(idxIndex);
