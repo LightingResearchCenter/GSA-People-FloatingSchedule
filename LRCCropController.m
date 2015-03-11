@@ -41,6 +41,8 @@ switch pModeObj.mode
         [inputPaths,lsInput,lsNewInput] = LRCCompareInput(inputDir,outputDir,'.cdf');
         save(inputIndexPath,'lsInput','lsNewInput');
     case 'overwrite'
+        delete([outputDir,filesep,'*.cdf']);
+        
         lsInput = dir([inputDir,filesep,'*.cdf']);
         lsNewInput = lsInput;
         inputNames = {lsInput.name}';
@@ -70,7 +72,7 @@ for iFile = 1:nFiles
     thisSubject = origData.GlobalAttributes.subjectID;
     thisBedLog = fullfile(logDir,['bedLog_subject',thisSubject,'.xlsx']);
     % Crop original data
-    cropData = singleCDFcrop(origData,thisBedLog,hFig);
+    cropData = LRCSingleCDFcrop(origData,thisBedLog,hFig);
     % Save cropped data
     if exist(thisCropFile,'file') == 2
         delete(thisCropFile)
