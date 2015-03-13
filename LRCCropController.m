@@ -84,19 +84,19 @@ try
     close(hFig);
 
 catch err
-warning(err.message);
-delete(inputIndexPath);
-if iFile > 1
-    lsMissedInput = lsNewInput(iFile:end);
-    lsNewInput = lsNewInput(1:iFile-1);
-    
-    missedInputNames = {lsMissedInput.name}';
-    inputNames = {lsInput.name}';
-    idxMissed = ismember(inputNames,missedInputNames);
-    lsInput = lsInput(~idxMissed);
-    
-    save(inputIndexPath,'lsInput','lsNewInput');
-end
+    warning(err.message);
+    delete(inputIndexPath);
+    if iFile > 1
+        lsMissedInput = lsNewInput(iFile:end);
+        lsNewInput = lsNewInput(1:iFile-1);
+
+        missedInputNames = {lsMissedInput.name}';
+        inputNames = {lsInput.name}';
+        idxMissed = ismember(inputNames,missedInputNames);
+        lsInput = lsInput(~idxMissed);
+
+        save(inputIndexPath,'lsInput','lsNewInput');
+    end
 end
 
 end
