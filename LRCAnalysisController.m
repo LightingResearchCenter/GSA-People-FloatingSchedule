@@ -23,33 +23,6 @@ end
 bedLog = fullfile(dirObj.logs,['bedLog_subject',subjectID,'.xlsx']);
 workLog = fullfile(dirObj.logs,['workLog_subject',subjectID,'.xlsx']);
 
-% Import logs
-if exist(bedLog,'file') == 2 && exist(workLog,'file') == 2
-    [bedTime, riseTime] = LRCImportBed(bedLog);
-    [~, location, workStart, workStop] = LRCImportWork(workLog);
-else
-    status = 'failure';
-    return;
-end
-
-% Construct list of office locations
-unqLoc = unique(location);
-if isempty(unqLoc)
-    unqLoc = {'NA'};
-end
-locationsStr = unqLoc{1};
-nLoc = numel(unqLoc);
-if nLoc > 1
-    for iLoc = 2:nLoc
-        if iLoc == nLoc
-            sep = ', and ';
-        else
-            sep = ', ';
-        end
-        locationsStr = [locationsStr,sep,unqLoc{iLoc}];
-    end
-end
-
 % Determine building from subject number
 subjectNum = str2double(subjectID);
 if subjectNum >= 100 && subjectNum < 200
@@ -63,6 +36,15 @@ end
 % Construct identifier strings
 displayLocation = ['Washington, D.C. ', building];
 displaySession = 'Winter';
+
+% Import logs
+if exist(bedLog,'file') == 2 && exist(workLog,'file') == 2
+    [bedTime, riseTime] = LRCImportBed(bedLog);
+    [~, location, workStart, workStop] = LRCImportWork(workLog);
+else
+    status = 'failure';
+    return;
+end
 
 % Limit time
 startTime = min(absTime.localDateNum(masks.observation));
@@ -144,15 +126,6 @@ switch plotSwitch
         end
 end
 
-% Work Averages
-try
-    [WrkAverage,PstAverage,PreAverage] = workprep(absTime,light,activity,masks,bedTime,riseTime,workStart,workStop);
-catch err
-    warning(err.message);
-    status = 'failure';
-    return;
-end
-
 % Sleep Analysis
 try
     Sleep = sleepprep(absTime,epoch,activity,bedTime,riseTime,masks);
@@ -162,19 +135,56 @@ catch err
     return;
 end
 
-% Assign output values upon successful completion
+% Construct list of office locations
+unqLoc = unique(location);
+if isempty(unqLoc)
+    status = 'failure';
+    return;
+end
+nLoc = numel(unqLoc);
+for iLoc = 1:nLoc
+    
+    thisLoc = unqLoc{iLoc};
+    idxLoc = strcmp(thisLoc,location);
+    theseWorkStart = workStart(idxLoc);
+    theseWorkStop = workStop(idxLoc);
+    
+    % Work Averages
+    try
+        [WrkAverage,PstAverage,PreAverage] = workprep(absTime,light,activity,masks,bedTime,riseTime,theseWorkStart,theseWorkStop);
+    catch err
+        warning(err.message);
+        status = 'failure';
+        return;
+    end
+    
+    % Sleep Analysis
+    try
+        PstSleep = postworksleepprep(absTime,epoch,activity,bedTime,riseTime,masks,theseWorkStop);
+    catch err
+        warning(err.message);
+        status = 'failure';
+        return;
+    end
+    
+    output_args(iLoc).subjectID         = subjectID;
+    output_args(iLoc).building          = building;
+    output_args(iLoc).location          = thisLoc;
+    
+    output_args(iLoc).Miller            = Miller;
+    output_args(iLoc).Phasor            = Phasor;
+    output_args(iLoc).Actigraphy        = Actigraphy;
+    output_args(iLoc).Average           = Average;
+    output_args(iLoc).Sleep             = Sleep;
+    
+    output_args(iLoc).WorkAverage       = WrkAverage;
+    output_args(iLoc).PostWorkAverage	= PstAverage;
+    output_args(iLoc).PreWorkAverage	= PreAverage;
+    output_args(iLoc).PostWorkSleep     = PstSleep;
+    
+end
+
 status = 'success';
-output_args.subjectID       = subjectID;
-output_args.building        = building;
-output_args.locations       = locationsStr;
-output_args.Miller          = Miller;
-output_args.Phasor          = Phasor;
-output_args.Actigraphy      = Actigraphy;
-output_args.Average         = Average;
-output_args.WorkAverage     = WrkAverage;
-output_args.PostWorkAverage	= PstAverage;
-output_args.PreWorkAverage	= PreAverage;
-output_args.Sleep           = Sleep;
 
 
 end
@@ -297,5 +307,57 @@ end
 
 % Average results
 Sleep = averageanalysis(dailySleep);
+
+end
+
+
+function PstSleep = postworksleepprep(absTime,epoch,activity,bedTime,riseTime,masks,workStop)
+
+absTime.localDateNum(~masks.compliance) = [];
+activity(~masks.compliance) = [];
+
+nIntervals = numel(workStop);
+dailySleep = cell(nIntervals,1);
+    
+for i1 = 1:nIntervals
+    % Perform analysis
+    try
+        [thisBedTime,thisRiseTime] = nightAfter(workStop(i1),bedTime,riseTime);
+        
+        if ~isempty(thisBedTime)
+            analysisStart = thisBedTime  - 20/(60*24);
+            analysisEnd   = thisRiseTime + 20/(60*24);
+            
+            dailySleep{i1} = sleep.sleep(absTime.localDateNum,activity,epoch,...
+                analysisStart,analysisEnd,...
+                thisBedTime,thisRiseTime,'auto');
+        end
+    catch err
+        warning(err.message);
+        continue;
+    end
+end
+
+% Average results
+PstSleep = averageanalysis(dailySleep);
+
+end
+
+
+function [thisBedTime,thisRiseTime] = nightAfter(thisDatenum,bedTime,riseTime)
+
+idx = bedTime > thisDatenum & bedTime < thisDatenum + 1;
+
+thisBedTime = bedTime(idx);
+thisRiseTime = riseTime(idx);
+
+if any(idx)
+    thisBedTime = thisBedTime(1);
+    thisRiseTime = thisRiseTime(1);
+    
+    if thisBedTime > thisDatenum + 0.5
+        warning('Late bed time');
+    end
+end
 
 end
