@@ -4,7 +4,7 @@ clear
 clc
 
 %% Folder Paths
-parentDir = '\\ROOT\projects\GSA_Daysimeter\WashingtonDC\Daysimeter_People_Data\winter';
+[parentDir,sessionTitle,building] = GSADirSelect;
 dirObj = LRCDirInit(parentDir);
 
 %% Ask if plots are desired
@@ -35,5 +35,5 @@ switch pModeObj.mode
 end
 
 %%
-LRCBatchAnalysisController(pModeObj,dirObj,plotSwitch);
+LRCBatchAnalysisController(pModeObj,dirObj,plotSwitch,sessionTitle,building);
 

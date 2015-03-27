@@ -4,7 +4,7 @@ clear
 clc
 
 %% Folder Paths
-parentDir = '\\ROOT\projects\GSA_Daysimeter\WashingtonDC\Daysimeter_People_Data\winter';
+parentDir = GSADirSelect;
 dirObj = LRCDirInit(parentDir);
 
 %% Set Update/Replace Mode

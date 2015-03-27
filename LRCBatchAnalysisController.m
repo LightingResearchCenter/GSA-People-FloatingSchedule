@@ -1,4 +1,4 @@
-function LRCBatchAnalysisController(pModeObj,dirObj,plotSwitch)
+function LRCBatchAnalysisController(pModeObj,dirObj,plotSwitch,sessionTitle,building)
 %LRCBATCHANALYSISCONTROLLER Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -31,7 +31,7 @@ for iFile = 1:nFile
     
     thisFile = inputPaths{iFile};
     
-    [status, temp_output_args] = LRCAnalysisController(thisFile, dirObj, plotSwitch);
+    [status, temp_output_args] = LRCAnalysisController(thisFile, dirObj, plotSwitch, sessionTitle, building);
     
     switch status
         case 'failure'

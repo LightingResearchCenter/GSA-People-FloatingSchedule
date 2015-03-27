@@ -1,4 +1,4 @@
-function [status, output_args] = LRCAnalysisController(cdfPath, dirObj, plotSwitch)
+function [status, output_args] = LRCAnalysisController(cdfPath, dirObj, plotSwitch, sessionTitle, building)
 %LRCANALYSISCONTROLLER Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -23,19 +23,15 @@ end
 bedLog = fullfile(dirObj.logs,['bedLog_subject',subjectID,'.xlsx']);
 workLog = fullfile(dirObj.logs,['workLog_subject',subjectID,'.xlsx']);
 
-% Determine building from subject number
-subjectNum = str2double(subjectID);
-if subjectNum >= 100 && subjectNum < 200
-    building = '1800F';
-elseif subjectNum >= 200 && subjectNum < 300
-    building = 'ROB';
-else
-    building = '';
-end
-
-% Construct identifier strings
-displayLocation = ['Washington, D.C. ', building];
-displaySession = 'Winter';
+% % Determine building from subject number
+% subjectNum = str2double(subjectID);
+% if subjectNum >= 100 && subjectNum < 200
+%     building = '1800F';
+% elseif subjectNum >= 200 && subjectNum < 300
+%     building = 'ROB';
+% else
+%     building = '';
+% end
 
 % Import logs
 if exist(bedLog,'file') == 2 && exist(workLog,'file') == 2
@@ -49,19 +45,19 @@ end
 % Limit time
 startTime = min(absTime.localDateNum(masks.observation));
 stopTime = max(absTime.localDateNum(masks.observation));
-idx = absTime.localDateNum > floor(startTime(1)) & absTime.localDateNum < ceil(stopTime(1));
+idx1 = absTime.localDateNum > floor(startTime(1)) & absTime.localDateNum < ceil(stopTime(1));
 masks2 = masks;
-masks2.observation = masks2.observation(idx);
-masks2.compliance = masks2.compliance(idx);
-masks2.bed = masks2.bed(idx);
+masks2.observation = masks2.observation(idx1);
+masks2.compliance = masks2.compliance(idx1);
+masks2.bed = masks2.bed(idx1);
 
 % Regular Averages
 try
     Average = reports.composite.daysimeteraverages(light,activity,masks);
     
     % Calculate viable days
-    idx = masks.observation & masks.compliance & ~masks.bed;
-    t = absTime.localDateNum(idx);
+    idx2 = masks.observation & masks.compliance & ~masks.bed;
+    t = absTime.localDateNum(idx2);
     d = unique(floor(t));
     n = numel(d);
     
@@ -105,9 +101,9 @@ switch plotSwitch
     case 'on'
         % Daysigram
         try
-            sheetTitle = ['GSA - ',displayLocation,' - ',displaySession,' - Subject ',subjectID];
+            sheetTitle = [sessionTitle,' - Subject ',subjectID];
             daysigramFileID = ['subjectID',subjectID,'_deviceSN',deviceSN];
-            reports.daysigram.daysigram(2,sheetTitle,absTime.localDateNum(idx),masks2,activity(idx),light.cs(idx),'cs',[0,1],10,dirObj.plots,[daysigramFileID,'_CS']);
+            reports.daysigram.daysigram(2,sheetTitle,absTime.localDateNum(idx1),masks2,activity(idx1),light.cs(idx1),'cs',[0,1],10,dirObj.plots,[daysigramFileID,'_CS']);
         catch err
             warning(err.message);
             status = 'failure';
@@ -116,7 +112,7 @@ switch plotSwitch
 
         % Light and Health Report
         try
-            figTitle = ['GSA - ',displayLocation,' - ',displaySession];
+            figTitle = sessionTitle;
             reports.composite.compositeReport(dirObj.plots,Phasor,Actigraphy,Average,Miller,subjectID,deviceSN,figTitle);
             clf;
         catch err
