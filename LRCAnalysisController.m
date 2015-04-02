@@ -97,6 +97,23 @@ catch err
     return;
 end
 
+% Millerize Work Data
+try
+    wrkDays = floor(workStart);
+    days = floor(absTime.localDateNum);
+    wrkIdx = ismember(days,wrkDays);
+    wrkMasks = masks;
+    wrkMasks.observation = wrkIdx & wrkMasks.observation;
+    
+    WrkMiller = struct('time',[],'cs',[],'activity',[]);
+    [             ~,WrkMiller.cs] = millerize.millerize(relTime,light.cs,wrkMasks);
+    [WrkMiller.time,WrkMiller.activity] = millerize.millerize(relTime,activity,wrkMasks);
+catch err
+    warning(err.message)
+    status = 'failure';
+    return;
+end
+
 switch plotSwitch
     case 'on'
         % Daysigram
@@ -168,6 +185,7 @@ for iLoc = 1:nLoc
     output_args(iLoc).location          = thisLoc;
     
     output_args(iLoc).Miller            = Miller;
+    output_args(iLoc).WorkMiller        = WrkMiller;
     output_args(iLoc).Phasor            = Phasor;
     output_args(iLoc).Actigraphy        = Actigraphy;
     output_args(iLoc).Average           = Average;
