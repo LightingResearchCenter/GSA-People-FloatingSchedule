@@ -23,15 +23,17 @@ end
 bedLog = fullfile(dirObj.logs,['bedLog_subject',subjectID,'.xlsx']);
 workLog = fullfile(dirObj.logs,['workLog_subject',subjectID,'.xlsx']);
 
-% % Determine building from subject number
-% subjectNum = str2double(subjectID);
-% if subjectNum >= 100 && subjectNum < 200
-%     building = '1800F';
-% elseif subjectNum >= 200 && subjectNum < 300
-%     building = 'ROB';
-% else
-%     building = '';
-% end
+if isempty(building)
+    % Determine building from subject number
+    subjectNum = str2double(subjectID);
+    if subjectNum >= 100 && subjectNum < 200
+        building = '1800F';
+    elseif subjectNum >= 200 && subjectNum < 300
+        building = 'ROB';
+    else
+        building = '';
+    end
+end
 
 % Import logs
 if exist(bedLog,'file') == 2 && exist(workLog,'file') == 2
