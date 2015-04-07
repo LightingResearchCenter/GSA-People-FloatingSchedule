@@ -24,7 +24,17 @@ resultsPath = fullfile(dirObj.results,lsResults.name);
 
 S = load(resultsPath);
 Results = S.output_args;
-Results = cat(1,Results{:});
+Results = [Results{:}];
+
+sub = {Results.subjectID};
+idxUnqSub = false(size(Results));
+preSub = '';
+for iSub = 1:numel(sub);
+    thisSub = sub{iSub};
+    idxUnqSub(iSub) = ~strcmp(preSub,thisSub);
+    preSub = thisSub;
+end
+Results = Results(idxUnqSub);
 
 %% Select the data to be plotted
 
@@ -36,6 +46,13 @@ idx3DaysPlus = nDaysPhasor >= 3;
 Results_3plus = Results(idx3DaysPlus);
 Phasor_3plus = [Results_3plus(:).Phasor];
 Miller_3plus = [Results_3plus(:).Miller];
+
+idxEmpty = false(size(Miller_3plus));
+for iM = 1:numel(Miller_3plus);
+    idxEmpty(iM) = isempty(Miller_3plus(iM).cs);
+end
+Miller_3plus(idxEmpty) = [];
+Phasor_3plus(idxEmpty) = [];
 
 %% Isolate the phasor vectors and average them
 vector_3plus = [Phasor_3plus(:).vector];
@@ -68,13 +85,23 @@ close all;
 hFig = figure;
 hAxes = axes;
 
-cs_3plus = [Miller_3plus(:).cs];
-miller_cs_3plus = mean(cs_3plus,2);
+time_3plus = vertcat(Miller_3plus(:).time);
+minutes_3plus = vertcat(time_3plus(:).minutes);
+unqMinutes_3plus = unique(minutes_3plus);
+unqMinutes_3plus = sort(unqMinutes_3plus);
+cs_3plus = vertcat(Miller_3plus(:).cs);
+ai_3plus = vertcat(Miller_3plus(:).activity);
 
-ai_3plus = [Miller_3plus(:).activity];
-miller_ai_3plus = mean(ai_3plus,2);
-
-miller_time_3plus = Miller_3plus(1).time;
+miller_time_3plus = relativetime(unqMinutes_3plus,'minutes');
+miller_cs_3plus = zeros(size(miller_time_3plus.minutes));
+miller_ai_3plus = zeros(size(miller_time_3plus.minutes));
+for iT = 1:numel(miller_time_3plus.minutes)
+    thisMinute = miller_time_3plus.minutes(iT);
+    thisIdx = minutes_3plus == thisMinute;
+    
+    miller_cs_3plus(iT) = mean(cs_3plus(thisIdx));
+    miller_ai_3plus(iT) = mean(ai_3plus(thisIdx));
+end
 
 plot(hAxes,miller_time_3plus.hours,miller_cs_3plus)
 hold on;
