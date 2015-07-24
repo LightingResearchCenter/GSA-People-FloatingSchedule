@@ -73,7 +73,18 @@ varCell = {'1', ' ','subject ID';...
            '40','post-work sleep','actual wake time (mins.)';...
            '41','post-work sleep','actual wake (%)';...
            '42','post-work sleep','sleep efficiency (%)';...
-           '43','post-work sleep','sleep onset latency (mins.)'}';
+           '43','post-work sleep','sleep onset latency (mins.)';...
+           
+           '44','non-work weekday waking average','# days used';...
+           '45','non-work weekday waking average','cs ari-mean';...
+           '46','non-work weekday waking average','illuminance ari-mean';...
+           '47','non-work weekday waking average','illuminance geo-mean';...
+           '48','non-work weekday waking average','activity ari-mean';...
+           
+           '49','work cs quartiles','# days used';...
+           '50','work cs quartiles','1st quartile';...
+           '51','work cs quartiles','2nd quartile';...
+           '52','work cs quartiles','3rd quartile';}';
 
 [~,nVar] = size(varCell);
 
@@ -135,6 +146,11 @@ for iR = 1:nResults
         rCell{row,29} = thisResult.WorkAverage.illuminance.arithmeticMean;
         rCell{row,30} = thisResult.WorkAverage.illuminance.geometricMean;
         rCell{row,31} = thisResult.WorkAverage.activity.arithmeticMean;
+        
+        rCell{row,49} = thisResult.WorkAverage.nDays;
+        rCell{row,50} = thisResult.WorkAverage.csQ1;
+        rCell{row,51} = thisResult.WorkAverage.csQ2;
+        rCell{row,52} = thisResult.WorkAverage.csQ3;
     end
     
     if isfield(thisResult.PostWorkAverage,'nDays')
@@ -153,6 +169,14 @@ for iR = 1:nResults
         rCell{row,41} = thisResult.PostWorkSleep.actualWakePercent;
         rCell{row,42} = thisResult.PostWorkSleep.sleepEfficiency;
         rCell{row,43} = thisResult.PostWorkSleep.sleepLatency;
+    end
+    
+    if isfield(thisResult.NonWorkAverage,'nDays')
+        rCell{row,44} = thisResult.NonWorkAverage.nDays;
+        rCell{row,45} = thisResult.NonWorkAverage.cs.arithmeticMean;
+        rCell{row,46} = thisResult.NonWorkAverage.illuminance.arithmeticMean;
+        rCell{row,47} = thisResult.NonWorkAverage.illuminance.geometricMean;
+        rCell{row,48} = thisResult.NonWorkAverage.activity.arithmeticMean;
     end
 end
 

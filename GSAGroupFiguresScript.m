@@ -13,10 +13,14 @@ parentDir = '\\ROOT\projects\GSA_Daysimeter\WashingtonDC\Daysimeter_People_Data\
 dirObj = LRCDirInit(parentDir);
 
 p1 = fullfile(parentDir,'phasor-1800F-winter.pdf');
-p2 = fullfile(parentDir,'miller-1800F-winter.pdf');
+p2  = fullfile(parentDir,'overall-miller-1800F-winter.pdf');
+p2a = fullfile(parentDir,'work-miller-1800F-winter.pdf');
+p2b = fullfile(parentDir,'nonwork-miller-1800F-winter.pdf');
 
 p3 = fullfile(parentDir,'phasor-ROB-winter.pdf');
-p4 = fullfile(parentDir,'miller-ROB-winter.pdf');
+p4  = fullfile(parentDir,'overall-miller-ROB-winter.pdf');
+p4a = fullfile(parentDir,'work-miller-ROB-winter.pdf');
+p4b = fullfile(parentDir,'nonwork-miller-ROB-winter.pdf');
 
 %% Find and Load Results
 % Find the most recent results
@@ -51,28 +55,46 @@ idx1800F_3Plus = idx1800F & idx3DaysPlus;
 
 Results_1800F = Results(idx1800F_3Plus);
 Phasor_1800F = [Results_1800F(:).Phasor];
-Miller_1800F = [Results_1800F(:).WorkMiller];
+Miller_1800F = [Results_1800F(:).Miller];
+WMiller_1800F = [Results_1800F(:).WorkMiller];
+NWMiller_1800F = [Results_1800F(:).NonWorkMiller];
 
-idxEmpty = false(size(Miller_1800F));
-for iM = 1:numel(Miller_1800F);
-    idxEmpty(iM) = isempty(Miller_1800F(iM).cs);
+idxEmpty1 = false(size(WMiller_1800F));
+idxEmpty2 = false(size(NWMiller_1800F));
+for iM = 1:numel(WMiller_1800F);
+    idxEmpty1(iM) = isempty(WMiller_1800F(iM).cs);
+    idxEmpty2(iM) = isempty(NWMiller_1800F(iM).cs);
 end
+idxEmpty = idxEmpty1 | idxEmpty2;
 Miller_1800F(idxEmpty) = [];
+WMiller_1800F(idxEmpty) = [];
+NWMiller_1800F(idxEmpty) = [];
 Phasor_1800F(idxEmpty) = [];
+
+display(['1800F n = ',num2str(numel(Phasor_1800F))]);
 
 idxROB = strcmpi({Results.building}','ROB');
 idxROB_3Plus = idxROB & idx3DaysPlus;
 
 Results_ROB = Results(idxROB_3Plus);
 Phasor_ROB = [Results_ROB(:).Phasor];
-Miller_ROB = [Results_ROB(:).WorkMiller];
+Miller_ROB = [Results_ROB(:).Miller];
+WMiller_ROB = [Results_ROB(:).WorkMiller];
+NWMiller_ROB = [Results_ROB(:).NonWorkMiller];
 
-idxEmpty = false(size(Miller_ROB));
-for iM = 1:numel(Miller_ROB);
-    idxEmpty(iM) = isempty(Miller_ROB(iM).cs);
+idxEmpty1 = false(size(WMiller_ROB));
+idxEmpty2 = false(size(NWMiller_ROB));
+for iM = 1:numel(WMiller_ROB);
+    idxEmpty1(iM) = isempty(WMiller_ROB(iM).cs);
+    idxEmpty2(iM) = isempty(NWMiller_ROB(iM).cs);
 end
+idxEmpty = idxEmpty1 | idxEmpty2;
 Miller_ROB(idxEmpty) = [];
+WMiller_ROB(idxEmpty) = [];
+NWMiller_ROB(idxEmpty) = [];
 Phasor_ROB(idxEmpty) = [];
+
+display(['ROB n = ',num2str(numel(Phasor_ROB))]);
 
 %% Isolated the phasor vectors and average them
 vector_1800F = [Phasor_1800F(:).vector];
@@ -104,7 +126,7 @@ hLine.LineWidth = 2;
 saveas(gcf,p1);
 close all;
 
-%% Miller Plot 1800F
+%% Overall Miller Plot 1800F
 hFig = figure;
 hAxes = axes;
 
@@ -138,6 +160,74 @@ hAxes.YLim = [0 0.7];
 saveas(gcf,p2);
 close all
 
+%% Work Miller Plot 1800F
+hFig = figure;
+hAxes = axes;
+
+time_1800F = vertcat(WMiller_1800F(:).time);
+minutes_1800F = vertcat(time_1800F(:).minutes);
+unqMinutes_1800F = unique(minutes_1800F);
+unqMinutes_1800F = sort(unqMinutes_1800F);
+cs_1800F = vertcat(WMiller_1800F(:).cs);
+ai_1800F = vertcat(WMiller_1800F(:).activity);
+
+miller_time_1800F = relativetime(unqMinutes_1800F,'minutes');
+miller_cs_1800F = zeros(size(miller_time_1800F.minutes));
+miller_ai_1800F = zeros(size(miller_time_1800F.minutes));
+for iT = 1:numel(miller_time_1800F.minutes)
+    thisMinute = miller_time_1800F.minutes(iT);
+    thisIdx = minutes_1800F == thisMinute;
+    
+    miller_cs_1800F(iT) = mean(cs_1800F(thisIdx));
+    miller_ai_1800F(iT) = mean(ai_1800F(thisIdx));
+end
+
+plot(hAxes,miller_time_1800F.hours,miller_cs_1800F)
+hold on;
+plot(hAxes,miller_time_1800F.hours,miller_ai_1800F)
+hLeg = legend('cs','ai');
+
+hAxes.XLim = [0 24];
+hAxes.YLim = [0 0.7];
+
+% Save the figure to disk
+saveas(gcf,p2a);
+close all
+
+%% Nonwork Miller Plot 1800F
+hFig = figure;
+hAxes = axes;
+
+time_1800F = vertcat(NWMiller_1800F(:).time);
+minutes_1800F = vertcat(time_1800F(:).minutes);
+unqMinutes_1800F = unique(minutes_1800F);
+unqMinutes_1800F = sort(unqMinutes_1800F);
+cs_1800F = vertcat(NWMiller_1800F(:).cs);
+ai_1800F = vertcat(NWMiller_1800F(:).activity);
+
+miller_time_1800F = relativetime(unqMinutes_1800F,'minutes');
+miller_cs_1800F = zeros(size(miller_time_1800F.minutes));
+miller_ai_1800F = zeros(size(miller_time_1800F.minutes));
+for iT = 1:numel(miller_time_1800F.minutes)
+    thisMinute = miller_time_1800F.minutes(iT);
+    thisIdx = minutes_1800F == thisMinute;
+    
+    miller_cs_1800F(iT) = mean(cs_1800F(thisIdx));
+    miller_ai_1800F(iT) = mean(ai_1800F(thisIdx));
+end
+
+plot(hAxes,miller_time_1800F.hours,miller_cs_1800F)
+hold on;
+plot(hAxes,miller_time_1800F.hours,miller_ai_1800F)
+hLeg = legend('cs','ai');
+
+hAxes.XLim = [0 24];
+hAxes.YLim = [0 0.7];
+
+% Save the figure to disk
+saveas(gcf,p2b);
+close all
+
 %% Phasor Plot ROB
 [hAxes,hGrid,hLabels] = plots.phasoraxes('rMax',0.6,'rTicks',3);
 
@@ -161,7 +251,7 @@ hLine.LineWidth = 2;
 saveas(gcf,p3);
 close all;
 
-%% Miller Plot ROB
+%% Overall Miller Plot ROB
 hFig = figure;
 hAxes = axes;
 
@@ -194,4 +284,76 @@ hAxes.YLim = [0 0.7];
 
 % Save the figure to disk
 saveas(gcf,p4);
+close all
+
+
+%% Work Miller Plot ROB
+hFig = figure;
+hAxes = axes;
+
+
+time_ROB = vertcat(WMiller_ROB(:).time);
+minutes_ROB = vertcat(time_ROB(:).minutes);
+minutes_ROB = unique(minutes_ROB);
+minutes_ROB = sort(minutes_ROB);
+cs_ROB = vertcat(WMiller_ROB(:).cs);
+ai_ROB = vertcat(WMiller_ROB(:).activity);
+
+miller_time_ROB = relativetime(minutes_ROB,'minutes');
+miller_cs_ROB = zeros(size(miller_time_ROB.minutes));
+miller_ai_ROB = zeros(size(miller_time_ROB.minutes));
+for iT = 1:numel(miller_time_ROB.minutes)
+    thisMinute = miller_time_ROB.minutes(iT);
+    thisIdx = minutes_ROB == thisMinute;
+    
+    miller_cs_ROB(iT) = mean(cs_ROB(thisIdx));
+    miller_ai_ROB(iT) = mean(ai_ROB(thisIdx));
+end
+
+plot(hAxes,miller_time_ROB.hours,miller_cs_ROB)
+hold on;
+plot(hAxes,miller_time_ROB.hours,miller_ai_ROB)
+hLeg = legend('cs','ai');
+
+hAxes.XLim = [0 24];
+hAxes.YLim = [0 0.7];
+
+% Save the figure to disk
+saveas(gcf,p4a);
+close all
+
+
+%% Nonwork Miller Plot ROB
+hFig = figure;
+hAxes = axes;
+
+
+time_ROB = vertcat(NWMiller_ROB(:).time);
+minutes_ROB = vertcat(time_ROB(:).minutes);
+minutes_ROB = unique(minutes_ROB);
+minutes_ROB = sort(minutes_ROB);
+cs_ROB = vertcat(NWMiller_ROB(:).cs);
+ai_ROB = vertcat(NWMiller_ROB(:).activity);
+
+miller_time_ROB = relativetime(minutes_ROB,'minutes');
+miller_cs_ROB = zeros(size(miller_time_ROB.minutes));
+miller_ai_ROB = zeros(size(miller_time_ROB.minutes));
+for iT = 1:numel(miller_time_ROB.minutes)
+    thisMinute = miller_time_ROB.minutes(iT);
+    thisIdx = minutes_ROB == thisMinute;
+    
+    miller_cs_ROB(iT) = mean(cs_ROB(thisIdx));
+    miller_ai_ROB(iT) = mean(ai_ROB(thisIdx));
+end
+
+plot(hAxes,miller_time_ROB.hours,miller_cs_ROB)
+hold on;
+plot(hAxes,miller_time_ROB.hours,miller_ai_ROB)
+hLeg = legend('cs','ai');
+
+hAxes.XLim = [0 24];
+hAxes.YLim = [0 0.7];
+
+% Save the figure to disk
+saveas(gcf,p4b);
 close all

@@ -70,6 +70,25 @@ catch err
     return;
 end
 
+% NonWork Averages
+try
+    workDay = LRCImportWork2(workLog);
+    nonIdx = isnonwork(absTime.localDateNum,workDay);
+    idx3 = masks.observation & masks.compliance & ~masks.bed;
+    nonTime = absTime.localDateNum(nonIdx & idx3);
+    nonDays = unique(floor(nonTime));
+    nonLight = LRCRefactorLight(light, nonIdx);
+    nonActivity = LRCRefactorActivity(activity, nonIdx);
+    nonMasks = LRCRefactorMasks(masks, nonIdx);
+    
+    NonWrkAverage = reports.composite.daysimeteraverages(nonLight,nonActivity,nonMasks);
+    NonWrkAverage.nDays = numel(nonDays);
+catch err
+    warning(err.message)
+    status = 'failure';
+    return;
+end
+
 % Phasor Analysis
 try
     Phasor = phasor.prep(absTime,epoch,light,activity,masks);
@@ -93,6 +112,20 @@ try
     Miller = struct('time',[],'cs',[],'activity',[]);
     [         ~,Miller.cs] = millerize.millerize(relTime,light.cs,masks);
     [Miller.time,Miller.activity] = millerize.millerize(relTime,activity,masks);
+catch err
+    warning(err.message)
+    status = 'failure';
+    return;
+end
+
+% Millerize Non-Work Data
+try
+    nonMasks = masks;
+    nonMasks.observation = nonIdx & nonMasks.observation;
+    
+    NonWrkMiller = struct('time',[],'cs',[],'activity',[]);
+    [             ~,NonWrkMiller.cs] = millerize.millerize(relTime,light.cs,nonMasks);
+    [NonWrkMiller.time,NonWrkMiller.activity] = millerize.millerize(relTime,activity,nonMasks);
 catch err
     warning(err.message)
     status = 'failure';
@@ -155,7 +188,7 @@ unqLoc = unique(location);
 if isempty(unqLoc)
     status = 'failure';
     return;
-end
+end 
 nLoc = numel(unqLoc);
 for iLoc = 1:nLoc
     
@@ -167,6 +200,7 @@ for iLoc = 1:nLoc
     % Work Averages
     try
         [WrkAverage,PstAverage,PreAverage] = workprep(absTime,light,activity,masks,bedTime,riseTime,theseWorkStart,theseWorkStop);
+        csHist(absTime,light,masks,theseWorkStart,theseWorkStop,building,thisLoc,subjectID,dirObj.plots);
     catch err
         warning(err.message);
         status = 'failure';
@@ -188,11 +222,13 @@ for iLoc = 1:nLoc
     
     output_args(iLoc).Miller            = Miller;
     output_args(iLoc).WorkMiller        = WrkMiller;
+    output_args(iLoc).NonWorkMiller     = NonWrkMiller;
     output_args(iLoc).Phasor            = Phasor;
     output_args(iLoc).Actigraphy        = Actigraphy;
     output_args(iLoc).Average           = Average;
     output_args(iLoc).Sleep             = Sleep;
     
+    output_args(iLoc).NonWorkAverage    = NonWrkAverage;
     output_args(iLoc).WorkAverage       = WrkAverage;
     output_args(iLoc).PostWorkAverage	= PstAverage;
     output_args(iLoc).PreWorkAverage	= PreAverage;
@@ -202,6 +238,23 @@ end
 
 status = 'success';
 
+
+end
+
+function tf = isnonwork(datenumArray,workDay)
+tf = true(size(datenumArray));
+
+dateArray = floor(datenumArray);
+weekdayArray = weekday(datenumArray);
+
+for iWork = 1:numel(workDay)
+    temp = dateArray ~= workDay(iWork);
+    tf = tf & temp;
+end
+
+weekend = weekdayArray == 1 | weekdayArray == 7;
+
+tf = tf & ~weekend;
 
 end
 
@@ -291,6 +344,13 @@ WrkAverage = reports.composite.daysimeteraverages(wrkLight,wrkActivity,wrkMasks)
 PstAverage = reports.composite.daysimeteraverages(pstLight,pstActivity,pstMasks);
 PreAverage = reports.composite.daysimeteraverages(preLight,preActivity,preMasks);
 
+% Find CS Quartiles
+wrkCS = light.cs(wrkIdx & idx);
+Q = quantile(wrkCS,3);
+WrkAverage.csQ1 = Q(1);
+WrkAverage.csQ2 = Q(2);
+WrkAverage.csQ3 = Q(3);
+
 % Add the number of days
 WrkAverage.nDays = nWrkDays;
 PstAverage.nDays = nPstDays;
@@ -376,4 +436,30 @@ if any(idx)
     end
 end
 
+end
+
+
+function csHist(absTime,light,masks,workStart,workStop,building,location,subject,plotDir)
+wrkIdx = iswork(absTime.localDateNum,workStart,workStop);
+idx = masks.observation & masks.compliance & ~masks.bed;
+wrkCS = light.cs(wrkIdx & idx);
+
+figTitle = ['Building: ',building,', Location: ',location,', Subject: ',subject];
+fileName = ['workCsHistogram_subjectID',subject,'_location',location,'_',datestr(now,'yyyy-mm-dd_HHMM'),'.jpg'];
+filePath = fullfile(plotDir,'histograms',fileName);
+
+
+hFig = figure(3);
+edges = 0:0.05:0.7;
+hHist = histogram(wrkCS,edges);
+hHist.Normalization = 'probability';
+hAxes = gca;
+hAxes.XLim = [0,0.7];
+hAxes.YLim = [0,1.0];
+
+ylabel('probability');
+xlabel('circadian stimulus (CS)');
+title(figTitle);
+saveas(hFig,filePath);
+close(hFig);
 end
