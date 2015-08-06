@@ -15,8 +15,12 @@ switch ext
         
         % Load the data from the cell
         for i1 = 1:nIntervals
-            bedTimeArray(i1) = datenum(bedLogCell{i1 + 1,2});
-            riseTimeArray(i1) = datenum(bedLogCell{i1 + 1,3});
+            try
+                bedTimeArray(i1) = datenum(bedLogCell{i1 + 1,2});
+                riseTimeArray(i1) = datenum(bedLogCell{i1 + 1,3});
+            catch err
+                % Skip lines that cannot be converted
+            end
         end
     case '.txt'
         fileID = fopen(file);
@@ -29,12 +33,21 @@ switch ext
         riseTimeArray = zeros(size(bedd));
         % this can probably be vectorized
         for i1 = 1:length(bedd)
-            bedTimeArray(i1) = datenum([bedd{i1} ' ' bedt{i1}]);
-            riseTimeArray(i1) = datenum([rised{i1} ' ' riset{i1}]);
+            try
+                bedTimeArray(i1) = datenum([bedd{i1} ' ' bedt{i1}]);
+                riseTimeArray(i1) = datenum([rised{i1} ' ' riset{i1}]);
+            catch err
+                % Skip lines that cannot be converted
+            end
         end
         fclose(fileID);
     otherwise
         return
 end
+
+% Delete skipped entries
+skippedIdx = bedTimeArray == 0;
+bedTimeArray(skippedIdx) = [];
+riseTimeArray(skippedIdx) = [];
 
 end
