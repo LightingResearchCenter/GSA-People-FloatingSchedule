@@ -35,7 +35,7 @@ for iFile = 1:nFile
     
     switch status
         case 'failure'
-            
+            display('Warning failure detected');
         case 'success'
             output_args{iFile} = temp_output_args;
     end
