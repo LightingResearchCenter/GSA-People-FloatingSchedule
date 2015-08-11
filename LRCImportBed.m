@@ -6,7 +6,13 @@ switch ext
         load(file);
     case {'.xls','.xlsx'}
         % Import bed log as a table
-        [~,~,bedLogCell] = xlsread(file);
+        [~,~,bedLogCell] = xlsread(file,'A1:C101');
+        
+        % Find rows with NaN and delete them
+        nanIdxCell = cellfun(@isnan,bedLogCell,'UniformOutput',false);
+        nanIdxMat = cellfun(@any,nanIdxCell);
+        nanIdxVec = any(nanIdxMat,2);
+        bedLogCell = bedLogCell(~nanIdxVec,:);
         
         % Initialize the arrays
         nIntervals = size(bedLogCell,1)-1;

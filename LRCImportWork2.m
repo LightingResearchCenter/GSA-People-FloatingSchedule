@@ -2,7 +2,7 @@ function workDay = LRCImportWork2(file)
 % imports the work log given by file.
 
 % Import work log cell array
-[~,~,workLogCell] = xlsread(file);
+[~,~,workLogCell] = xlsread(file,'A1:D101');
 
 % Find rows with NaN and delete them
 temp = workLogCell(:,3);

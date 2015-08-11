@@ -2,7 +2,7 @@ function [interval, location, startTime, endTime] = LRCImportWork(file)
 % imports the work log given by file.
 
 % Import work log cell array
-[~,~,workLogCell] = xlsread(file);
+[~,~,workLogCell] = xlsread(file,'A1:D101');
 
 % Find rows with NaN and delete them
 nanIdxCell = cellfun(@isnan,workLogCell,'UniformOutput',false);
