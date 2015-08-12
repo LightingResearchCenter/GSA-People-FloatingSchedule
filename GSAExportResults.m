@@ -8,11 +8,15 @@ clc
 dirObj = LRCDirInit(parentDir);
 
 %% Find and Load Results
+
+[FileName,PathName,FilterIndex] = uigetfile([dirObj.results,filesep,'results*.mat']);
+resultsPath = fullfile(PathName,FileName);
+
 % Find the most recent results
-lsResults = dir([dirObj.results,filesep,'results*.mat']);
-[~,idxResults] = max([lsResults.datenum]);
-lsResults = lsResults(idxResults);
-resultsPath = fullfile(dirObj.results,lsResults.name);
+% lsResults = dir([dirObj.results,filesep,'results*.mat']);
+% [~,idxResults] = max([lsResults.datenum]);
+% lsResults = lsResults(idxResults);
+% resultsPath = fullfile(dirObj.results,lsResults.name);
 
 S = load(resultsPath);
 Results = S.output_args;
@@ -147,10 +151,12 @@ for iR = 1:nResults
         rCell{row,30} = thisResult.WorkAverage.illuminance.geometricMean;
         rCell{row,31} = thisResult.WorkAverage.activity.arithmeticMean;
         
-        rCell{row,49} = thisResult.WorkAverage.nDays;
-        rCell{row,50} = thisResult.WorkAverage.csQ1;
-        rCell{row,51} = thisResult.WorkAverage.csQ2;
-        rCell{row,52} = thisResult.WorkAverage.csQ3;
+        if isfield(thisResult.WorkAverage,'csQ1')
+            rCell{row,49} = thisResult.WorkAverage.nDays;
+            rCell{row,50} = thisResult.WorkAverage.csQ1;
+            rCell{row,51} = thisResult.WorkAverage.csQ2;
+            rCell{row,52} = thisResult.WorkAverage.csQ3;
+        end
     end
     
     if isfield(thisResult.PostWorkAverage,'nDays')
@@ -171,12 +177,14 @@ for iR = 1:nResults
         rCell{row,43} = thisResult.PostWorkSleep.sleepLatency;
     end
     
-    if isfield(thisResult.NonWorkAverage,'nDays')
-        rCell{row,44} = thisResult.NonWorkAverage.nDays;
-        rCell{row,45} = thisResult.NonWorkAverage.cs.arithmeticMean;
-        rCell{row,46} = thisResult.NonWorkAverage.illuminance.arithmeticMean;
-        rCell{row,47} = thisResult.NonWorkAverage.illuminance.geometricMean;
-        rCell{row,48} = thisResult.NonWorkAverage.activity.arithmeticMean;
+    if isfield(thisResult,'NonWorkAverage')
+        if isfield(thisResult.NonWorkAverage,'nDays')
+            rCell{row,44} = thisResult.NonWorkAverage.nDays;
+            rCell{row,45} = thisResult.NonWorkAverage.cs.arithmeticMean;
+            rCell{row,46} = thisResult.NonWorkAverage.illuminance.arithmeticMean;
+            rCell{row,47} = thisResult.NonWorkAverage.illuminance.geometricMean;
+            rCell{row,48} = thisResult.NonWorkAverage.activity.arithmeticMean;
+        end
     end
 end
 
