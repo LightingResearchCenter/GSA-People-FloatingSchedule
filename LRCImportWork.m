@@ -11,21 +11,27 @@ nanIdxVec = any(nanIdxMat,2);
 workLogCell = workLogCell(~nanIdxVec,:);
 
 % Split columns into variables and format
-interval = cell2mat(workLogCell(2:end,1));
-location = workLogCell(2:end,2);
-startTime = datenum(workLogCell(2:end,3));
-endTime = datenum(workLogCell(2:end,4));
+if isempty(workLogCell(2:end,3)) || isempty(workLogCell(2:end,4))
+    interval = [];
+    location = {};
+    startTime = [];
+    endTime = [];
+else
+    interval = cell2mat(workLogCell(2:end,1));
+    location = workLogCell(2:end,2);
+    startTime = datenum(workLogCell(2:end,3));
+    endTime = datenum(workLogCell(2:end,4));
 
-% Make sure locations are strings
-strIdx = cellfun(@ischar,location);
-numIdx = ~strIdx;
-if any(numIdx)
-    for iLoc = 1:numel(location)
-        thisLoc = location{iLoc};
-        if ~ischar(thisLoc)
-            location{iLoc} = num2str(thisLoc);
+    % Make sure locations are strings
+    strIdx = cellfun(@ischar,location);
+    numIdx = ~strIdx;
+    if any(numIdx)
+        for iLoc = 1:numel(location)
+            thisLoc = location{iLoc};
+            if ~ischar(thisLoc)
+                location{iLoc} = num2str(thisLoc);
+            end
         end
     end
 end
-
 end

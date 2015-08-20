@@ -5,13 +5,16 @@ function workDay = LRCImportWork2(file)
 [~,~,workLogCell] = xlsread(file,'A1:D101');
 
 % Find rows with NaN and delete them
-temp = workLogCell(:,3);
-nanIdxCell = cellfun(@isnan,temp,'UniformOutput',false);
-nanIdxVec = cellfun(@any,nanIdxCell);
+nanIdxCell = cellfun(@isnan,workLogCell,'UniformOutput',false);
+nanIdxMat = cellfun(@any,nanIdxCell);
+nanIdxVec = any(nanIdxMat,2);
 workLogCell = workLogCell(~nanIdxVec,:);
 
 % Split columns into variables and format
-workDay = floor(datenum(workLogCell(2:end,3)));
-
+if isempty(workLogCell(2:end,3))
+    workDay = [];
+else
+    workDay = floor(datenum(workLogCell(2:end,3)));
+end
 
 end

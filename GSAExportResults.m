@@ -9,14 +9,14 @@ dirObj = LRCDirInit(parentDir);
 
 %% Find and Load Results
 
-[FileName,PathName,FilterIndex] = uigetfile([dirObj.results,filesep,'results*.mat']);
-resultsPath = fullfile(PathName,FileName);
+% [FileName,PathName,FilterIndex] = uigetfile([dirObj.results,filesep,'results*.mat']);
+% resultsPath = fullfile(PathName,FileName);
 
 % Find the most recent results
-% lsResults = dir([dirObj.results,filesep,'results*.mat']);
-% [~,idxResults] = max([lsResults.datenum]);
-% lsResults = lsResults(idxResults);
-% resultsPath = fullfile(dirObj.results,lsResults.name);
+lsResults = dir([dirObj.results,filesep,'results*.mat']);
+[~,idxResults] = max([lsResults.datenum]);
+lsResults = lsResults(idxResults);
+resultsPath = fullfile(dirObj.results,lsResults.name);
 
 S = load(resultsPath);
 Results = S.output_args;
@@ -195,3 +195,5 @@ if exist(excelPath,'file') == 2
     delete(excelPath);
 end
 xlswrite(excelPath,rCell);
+
+winopen(excelPath);

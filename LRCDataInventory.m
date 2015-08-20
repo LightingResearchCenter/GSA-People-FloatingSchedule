@@ -41,5 +41,7 @@ excelName = ['inventory_',datestr(now,'yyyy-mm-dd_MMSS'),'_',dirName,'.xlsx'];
 inventoryPath = fullfile(selectedDir,excelName);
 xlswrite(inventoryPath,inventoryCell);
 
+winopen(inventoryPath);
+
 end
 

@@ -39,6 +39,10 @@ end
 if exist(bedLog,'file') == 2 && exist(workLog,'file') == 2
     [bedTime, riseTime] = LRCImportBed(bedLog);
     [~, location, workStart, workStop] = LRCImportWork(workLog);
+    if isempty(location)
+        status = 'failure';
+        return;
+    end
 else
     status = 'failure';
     return;

@@ -29,10 +29,14 @@ tempMat2 = mean(tempMat,1);
 
 % Create structure for output
 tempCell3 = num2cell(tempMat2);
-param = cell2struct(tempCell3,varNames2,2);
+if isempty(tempCell3)
+    param = struct;
+else
+    param = cell2struct(tempCell3,varNames2,2);
 
-% Intervals averaged
-param.nIntervalsAveraged = size(tempMat,1);
+    % Intervals averaged
+    param.nIntervalsAveraged = size(tempMat,1);
+end
 
 end
 
