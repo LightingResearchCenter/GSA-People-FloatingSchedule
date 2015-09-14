@@ -4,7 +4,7 @@ function [buildingDir,summerParentDir,summerSessionTitle,winterParentDir,winterS
 
 GSADir = '\\ROOT\projects\GSA_Daysimeter';
 
-city = {'DC-1800F','DC-ROB','Seattle-1201','Seattle-1202'};
+city = {'DC-1800F','DC-ROB','Seattle-1201','Seattle-1202','Grand Junction','Portland'};
 choice = menu('Choose a city',city);
 thisCity = city{choice};
 
@@ -33,6 +33,18 @@ switch thisCity
         titleRoot = 'GSA - Seattle, WA FCS Building 1202';
         [summerSessionTitle,winterSessionTitle] = constructTitles(titleRoot);
         building = 'FCS Building 1202';
+    case 'Grand Junction'
+        buildingDir = fullfile(GSADir,'GrandJunction_Colorado_site_data','Daysimeter_People_Data');
+        [summerParentDir,winterParentDir] = constructPaths(buildingDir);
+        titleRoot = 'GSA - Grand Junction, CO';
+        [summerSessionTitle,winterSessionTitle] = constructTitles(titleRoot);
+        building = 'Grand Junction';
+    case 'Portland'
+        buildingDir = fullfile(GSADir,'Portland_Oregon_site_data','Daysimeter_People_Data');
+        [summerParentDir,winterParentDir] = constructPaths(buildingDir);
+        titleRoot = 'GSA - Portland, OR';
+        [summerSessionTitle,winterSessionTitle] = constructTitles(titleRoot);
+        building = 'Portland';
     otherwise
         error('Unknown city');
 end

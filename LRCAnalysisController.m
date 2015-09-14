@@ -4,6 +4,7 @@ function [status, output_args] = LRCAnalysisController(cdfPath, dirObj, plotSwit
 
 % Preallocate output_args
 output_args = struct;
+status = 'success';
 
 % Enable dependencies
 [githubDir,~,~] = fileparts(pwd);
@@ -35,27 +36,40 @@ if isempty(building)
     end
 end
 
-% Import logs
-if exist(bedLog,'file') == 2 && exist(workLog,'file') == 2
+% Import bed log
+if exist(bedLog,'file') == 2
     [bedTime, riseTime] = LRCImportBed(bedLog);
-    [~, location, workStart, workStop] = LRCImportWork(workLog);
-    if isempty(location)
-        status = 'failure';
-        return;
-    end
 else
     status = 'failure';
     return;
 end
 
+% Import or make work log
+if exist(workLog,'file') == 2
+    [~, location, workStart, workStop] = LRCImportWork(workLog);
+    if isempty(location)
+        status = 'warning';
+        location = {'NA'};
+        workStart = 0;
+        workStop = 0;
+    end
+else
+    [~, location, workStart, workStop] = makeWorkLog(absTime,'NA');
+end
+
 % Limit time
-startTime = min(absTime.localDateNum(masks.observation));
-stopTime = max(absTime.localDateNum(masks.observation));
-idx1 = absTime.localDateNum > floor(startTime(1)) & absTime.localDateNum < ceil(stopTime(1));
-masks2 = masks;
-masks2.observation = masks2.observation(idx1);
-masks2.compliance = masks2.compliance(idx1);
-masks2.bed = masks2.bed(idx1);
+try
+    startTime = min(absTime.localDateNum(masks.observation));
+    stopTime = max(absTime.localDateNum(masks.observation));
+    idx1 = absTime.localDateNum > floor(startTime(1)) & absTime.localDateNum < ceil(stopTime(1));
+    masks2 = masks;
+    masks2.observation = masks2.observation(idx1);
+    masks2.compliance = masks2.compliance(idx1);
+    masks2.bed = masks2.bed(idx1);
+catch err
+    status = 'failure';
+    return;
+end
 
 % Regular Averages
 try
@@ -70,13 +84,17 @@ try
     Average.nDays = n;
 catch err
     warning(err.message)
-    status = 'failure';
-    return;
+    status = 'warning';
+    % return;
 end
 
 % NonWork Averages
 try
-    workDay = LRCImportWork2(workLog);
+    if exist(workLog,'file') == 2
+        workDay = LRCImportWork2(workLog);
+    else
+        workDay = makeWorkLog2(absTime);
+    end
     nonIdx = isnonwork(absTime.localDateNum,workDay);
     idx3 = masks.observation & masks.compliance & ~masks.bed;
     nonTime = absTime.localDateNum(nonIdx & idx3);
@@ -89,8 +107,8 @@ try
     NonWrkAverage.nDays = numel(nonDays);
 catch err
     warning(err.message)
-    status = 'failure';
-    return;
+    status = 'warning';
+    % return;
 end
 
 % Phasor Analysis
@@ -98,8 +116,8 @@ try
     Phasor = phasor.prep(absTime,epoch,light,activity,masks);
 catch err
     warning(err.message)
-    status = 'failure';
-    return;
+    status = 'warning';
+    % return;
 end
 
 % Actigraphy Analysis
@@ -107,8 +125,8 @@ try
     Actigraphy = isiv.prep(absTime,epoch,activity,masks);
 catch err
     warning(err.message)
-    status = 'failure';
-    return;
+    status = 'warning';
+    % return;
 end
 
 % Millerize Data
@@ -118,8 +136,8 @@ try
     [Miller.time,Miller.activity] = millerize.millerize(relTime,activity,masks);
 catch err
     warning(err.message)
-    status = 'failure';
-    return;
+    status = 'warning';
+    % return;
 end
 
 % Millerize Non-Work Data
@@ -132,26 +150,11 @@ try
     [NonWrkMiller.time,NonWrkMiller.activity] = millerize.millerize(relTime,activity,nonMasks);
 catch err
     warning(err.message)
-    status = 'failure';
-    return;
+    status = 'warning';
+    % return;
 end
 
-% Millerize Work Data
-try
-    wrkDays = floor(workStart);
-    days = floor(absTime.localDateNum);
-    wrkIdx = ismember(days,wrkDays);
-    wrkMasks = masks;
-    wrkMasks.observation = wrkIdx & wrkMasks.observation;
-    
-    WrkMiller = struct('time',[],'cs',[],'activity',[]);
-    [             ~,WrkMiller.cs] = millerize.millerize(relTime,light.cs,wrkMasks);
-    [WrkMiller.time,WrkMiller.activity] = millerize.millerize(relTime,activity,wrkMasks);
-catch err
-    warning(err.message)
-    status = 'failure';
-    return;
-end
+
 
 switch plotSwitch
     case 'on'
@@ -162,8 +165,8 @@ switch plotSwitch
             reports.daysigram.daysigram(2,sheetTitle,absTime.localDateNum(idx1),masks2,activity(idx1),light.cs(idx1),'cs',[0,1],10,dirObj.plots,[daysigramFileID,'_CS']);
         catch err
             warning(err.message);
-            status = 'failure';
-            return;
+            status = 'warning';
+            % return;
         end
 
         % Light and Health Report
@@ -173,8 +176,8 @@ switch plotSwitch
             clf;
         catch err
             warning(err.message);
-            status = 'failure';
-            return;
+            status = 'warning';
+            % return;
         end
 end
 
@@ -183,15 +186,16 @@ try
     Sleep = sleepprep(absTime,epoch,activity,bedTime,riseTime,masks);
 catch err
     warning(err.message);
-    status = 'failure';
-    return;
+    status = 'warning';
+    % return;
 end
 
 % Construct list of office locations
 unqLoc = unique(location);
 if isempty(unqLoc)
-    status = 'failure';
-    return;
+    status = 'warning';
+    unqLoc = {'NA'};
+    % return;
 end 
 nLoc = numel(unqLoc);
 for iLoc = 1:nLoc
@@ -201,14 +205,31 @@ for iLoc = 1:nLoc
     theseWorkStart = workStart(idxLoc);
     theseWorkStop = workStop(idxLoc);
     
+    % Millerize Work Data
+    try
+        wrkDays = floor(theseWorkStart);
+        days = floor(absTime.localDateNum);
+        wrkIdx = ismember(days,wrkDays);
+        wrkMasks = masks;
+        wrkMasks.observation = wrkIdx & wrkMasks.observation;
+
+        WrkMiller = struct('time',[],'cs',[],'activity',[]);
+        [             ~,WrkMiller.cs] = millerize.millerize(relTime,light.cs,wrkMasks);
+        [WrkMiller.time,WrkMiller.activity] = millerize.millerize(relTime,activity,wrkMasks);
+    catch err
+        warning(err.message)
+        status = 'warning';
+        % return;
+    end
+    
     % Work Averages
     try
         [WrkAverage,PstAverage,PreAverage] = workprep(absTime,light,activity,masks,bedTime,riseTime,theseWorkStart,theseWorkStop);
         csHist(absTime,light,masks,theseWorkStart,theseWorkStop,building,thisLoc,subjectID,dirObj.plots);
     catch err
         warning(err.message);
-        status = 'failure';
-        return;
+        status = 'warning';
+        % return;
     end
     
     % Sleep Analysis
@@ -216,31 +237,102 @@ for iLoc = 1:nLoc
         PstSleep = postworksleepprep(absTime,epoch,activity,bedTime,riseTime,masks,theseWorkStop);
     catch err
         warning(err.message);
-        status = 'failure';
-        return;
+        status = 'warning';
+        % return;
     end
     
-    output_args(iLoc).subjectID         = subjectID;
-    output_args(iLoc).building          = building;
-    output_args(iLoc).location          = thisLoc;
+    if exist('subjectID','var') == 1
+        output_args(iLoc).subjectID = subjectID;
+    else
+        output_args(iLoc).subjectID = 'NA';
+    end
     
-    output_args(iLoc).Miller            = Miller;
-    output_args(iLoc).WorkMiller        = WrkMiller;
-    output_args(iLoc).NonWorkMiller     = NonWrkMiller;
-    output_args(iLoc).Phasor            = Phasor;
-    output_args(iLoc).Actigraphy        = Actigraphy;
-    output_args(iLoc).Average           = Average;
-    output_args(iLoc).Sleep             = Sleep;
+    if exist('building','var') == 1
+        output_args(iLoc).building = building;
+    else
+        output_args(iLoc).building = 'NA';
+    end
     
-    output_args(iLoc).NonWorkAverage    = NonWrkAverage;
-    output_args(iLoc).WorkAverage       = WrkAverage;
-    output_args(iLoc).PostWorkAverage	= PstAverage;
-    output_args(iLoc).PreWorkAverage	= PreAverage;
-    output_args(iLoc).PostWorkSleep     = PstSleep;
+    if exist('thisLoc','var') == 1
+        output_args(iLoc).location = thisLoc;
+    else
+        output_args(iLoc).location = 'NA';
+    end
     
+    if exist('Miller','var') == 1
+        output_args(iLoc).Miller = Miller;
+    else
+        output_args(iLoc).Miller = struct;
+    end
+    
+    if exist('WrkMiller','var') == 1
+        output_args(iLoc).WorkMiller = WrkMiller;
+    else
+        output_args(iLoc).WorkMiller = struct;
+    end
+    
+    if exist('NonWrkMiller','var') == 1
+        output_args(iLoc).NonWorkMiller = NonWrkMiller;
+    else
+        output_args(iLoc).NonWorkMiller = struct;
+    end
+    
+    if exist('Phasor','var') == 1
+        output_args(iLoc).Phasor = Phasor;
+    else
+        output_args(iLoc).Phasor = struct;
+    end
+    
+    if exist('Actigraphy','var') == 1
+        output_args(iLoc).Actigraphy = Actigraphy;
+    else
+        output_args(iLoc).Actigraphy = struct;
+    end
+    
+    if exist('Average','var') == 1
+        output_args(iLoc).Average = Average;
+    else
+        output_args(iLoc).Average = struct;
+    end
+    
+    if exist('Sleep','var') == 1
+        output_args(iLoc).Sleep = Sleep;
+    else
+        output_args(iLoc).Sleep = struct;
+    end
+    
+    if exist('NonWrkAverage','var') == 1
+        output_args(iLoc).NonWorkAverage = NonWrkAverage;
+    else
+        output_args(iLoc).NonWorkAverage = struct;
+    end
+    
+    if exist('WrkAverage','var') == 1
+        output_args(iLoc).WorkAverage = WrkAverage;
+    else
+        output_args(iLoc).WorkAverage = struct;
+    end
+    
+    if exist('PstAverage','var') == 1
+        output_args(iLoc).PostWorkAverage = PstAverage;
+    else
+        output_args(iLoc).PostWorkAverage = struct;
+    end
+    
+    if exist('PreAverage','var') == 1
+        output_args(iLoc).PreWorkAverage = PreAverage;
+    else
+        output_args(iLoc).PreWorkAverage = struct;
+    end
+    
+    if exist('PstSleep','var') == 1
+        output_args(iLoc).PostWorkSleep = PstSleep;
+    else
+        output_args(iLoc).PostWorkSleep = struct;
+    end
 end
 
-status = 'success';
+% status = 'success';
 
 
 end
@@ -450,6 +542,10 @@ wrkCS = light.cs(wrkIdx & idx);
 
 figTitle = ['Building: ',building,', Location: ',location,', Subject: ',subject];
 fileName = ['workCsHistogram_subjectID',subject,'_location',location,'_',datestr(now,'yyyy-mm-dd_HHMM'),'.jpg'];
+if exist(fullfile(plotDir,'histograms'),'dir') ~= 7
+    mkdir(fullfile(plotDir,'histograms'))
+end
+
 filePath = fullfile(plotDir,'histograms',fileName);
 
 

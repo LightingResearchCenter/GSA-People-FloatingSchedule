@@ -20,8 +20,10 @@ resultsPath = fullfile(dirObj.results,lsResults.name);
 
 S = load(resultsPath);
 Results = S.output_args;
-idxEmpty = cellfun(@isempty,Results);
-Results(idxEmpty) = [];
+fun = @(c) isfield(c,'subjectID');
+idxValid = cellfun(fun,Results);
+% idxEmpty = cellfun(@isempty,Results);
+Results(~idxValid) = [];
 Results = [Results{:}];
 
 %% Convert Structure to Cell matrix

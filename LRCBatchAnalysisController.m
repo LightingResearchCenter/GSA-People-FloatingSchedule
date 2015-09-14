@@ -33,12 +33,13 @@ for iFile = 1:nFile
     
     [status, temp_output_args] = LRCAnalysisController(thisFile, dirObj, plotSwitch, sessionTitle, building);
     
-    switch status
-        case 'failure'
-            display('Warning failure detected');
-        case 'success'
+%     switch status
+%         case 'failure'
+%             display('Warning failure detected');
+%         case {'success','warning'}
             output_args{iFile} = temp_output_args;
-    end
+%     end
+
     
 end
 

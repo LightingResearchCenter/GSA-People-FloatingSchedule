@@ -1,4 +1,4 @@
-function GSARepeatsGroupFigures
+function GSANonRepeatsGroupFigures
 
 % Dependencies
 [githubDir,~,~] = fileparts(pwd);
@@ -11,32 +11,32 @@ addpath(circadianDir);
 dirObjSummer = LRCDirInit(summerParentDir);
 dirObjWinter = LRCDirInit(winterParentDir);
 
-phasorPathSummer = fullfile(summerParentDir,['phasor-repeatsONLY_',summerSessionTitle,'.pdf']);
-phasorPathWinter = fullfile(winterParentDir,['phasor-repeatsONLY_',winterSessionTitle,'.pdf']);
+phasorPathSummer = fullfile(summerParentDir,['phasor-withNonrepeats_',summerSessionTitle,'.pdf']);
+phasorPathWinter = fullfile(winterParentDir,['phasor-withNonrepeats_',winterSessionTitle,'.pdf']);
 
-millerPathSummer = fullfile(summerParentDir,['miller-repeatsONLY_',summerSessionTitle,'.pdf']);
-millerPathWinter = fullfile(winterParentDir,['miller-repeatsONLY_',winterSessionTitle,'.pdf']);
+millerPathSummer = fullfile(summerParentDir,['miller-withNonrepeats_',summerSessionTitle,'.pdf']);
+millerPathWinter = fullfile(winterParentDir,['miller-withNonrepeats_',winterSessionTitle,'.pdf']);
 
-workPhasorPathSummer = fullfile(summerParentDir,['work-phasor-repeatsONLY_',summerSessionTitle,'.pdf']);
-workPhasorPathWinter = fullfile(winterParentDir,['work-phasor-repeatsONLY_',winterSessionTitle,'.pdf']);
+workPhasorPathSummer = fullfile(summerParentDir,['work-phasor-withNonrepeats_',summerSessionTitle,'.pdf']);
+workPhasorPathWinter = fullfile(winterParentDir,['work-phasor-withNonrepeats_',winterSessionTitle,'.pdf']);
 
-workMillerPathSummer = fullfile(summerParentDir,['work-miller-repeatsONLY_',summerSessionTitle,'.pdf']);
-workMillerPathWinter = fullfile(winterParentDir,['work-miller-repeatsONLY_',winterSessionTitle,'.pdf']);
+workMillerPathSummer = fullfile(summerParentDir,['work-miller-withNonrepeats_',summerSessionTitle,'.pdf']);
+workMillerPathWinter = fullfile(winterParentDir,['work-miller-withNonrepeats_',winterSessionTitle,'.pdf']);
 
 % Find and Load Results
 ResultsSummer = GSALoadResults(dirObjSummer);
 ResultsWinter = GSALoadResults(dirObjWinter);
 
-% Limit results to repeat subjects
-[ResultsSummer,ResultsWinter] = GSAFindRepeats(ResultsSummer,ResultsWinter);
+% % Limit results to repeat subjects
+% [ResultsSummer,ResultsWinter] = GSAFindRepeats(ResultsSummer,ResultsWinter);
 
 % Select the data to be plotted
 [subjectsWorkSummer,MillerSummer,PhasorSummer,WorkMillerSummer,WorkPhasorSummer] = GSASelectData(ResultsSummer);
 [subjectsWorkWinter,MillerWinter,PhasorWinter,WorkMillerWinter,WorkPhasorWinter] = GSASelectData(ResultsWinter);
 
-% Remove non-repeat work subjects
-[WorkMillerSummer,WorkMillerWinter] = GSAFindWorkRepeats(subjectsWorkSummer,subjectsWorkWinter,WorkMillerSummer,WorkMillerWinter);
-[WorkPhasorSummer,WorkPhasorWinter] = GSAFindWorkRepeats(subjectsWorkSummer,subjectsWorkWinter,WorkPhasorSummer,WorkPhasorWinter);
+% % Remove non-repeat work subjects
+% [WorkMillerSummer,WorkMillerWinter] = GSAFindWorkRepeats(subjectsWorkSummer,subjectsWorkWinter,WorkMillerSummer,WorkMillerWinter);
+% [WorkPhasorSummer,WorkPhasorWinter] = GSAFindWorkRepeats(subjectsWorkSummer,subjectsWorkWinter,WorkPhasorSummer,WorkPhasorWinter);
 
 % Phasor Plot
 GSAPhasorPlot(PhasorSummer,phasorPathSummer);
