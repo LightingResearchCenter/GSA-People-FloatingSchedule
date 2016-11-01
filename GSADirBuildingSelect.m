@@ -1,12 +1,16 @@
-function [buildingDir,summerParentDir,summerSessionTitle,winterParentDir,winterSessionTitle,building] = GSADirBuildingSelect
+function [buildingDir,summerParentDir,summerSessionTitle,winterParentDir,winterSessionTitle,building] = GSADirBuildingSelect(varargin)
 %GSADIRBUILDINGSELECT Summary of this function goes here
 %   Detailed explanation goes here
 
 GSADir = '\\ROOT\projects\GSA_Daysimeter';
 
-city = {'DC-1800F','DC-ROB','Seattle-1201','Seattle-1202','Grand Junction','Portland'};
-choice = menu('Choose a city',city);
-thisCity = city{choice};
+if nargin < 1
+    city = {'DC-1800F','DC-ROB','Seattle-1201','Seattle-1202','Grand Junction','Portland'};
+    choice = menu('Choose a city',city);
+    thisCity = city{choice};
+else
+    thisCity = varargin{1};
+end
 
 switch thisCity
     case 'DC-1800F'

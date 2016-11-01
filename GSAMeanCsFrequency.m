@@ -1,4 +1,4 @@
-function GSACsFrequency
+function GSAMeanCsFrequency
 %GSACSFREQUENCY Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -9,36 +9,31 @@ close all
 circadianDir = fullfile(gitHubDir,'circadian');
 addpath(circadianDir);
 
-dataStore = fullfile(pwd,'dataStore.mat');
+dataStore = fullfile(pwd,'dataStore-mean2.mat');
 
 if fileDoesExist(dataStore)
     load(dataStore,'data');
 else
     % Map directories
-    [dataDirArray,locationArray,sessionArray] = mapDirs;
+    dataDirArray = mapDirs;
 
     % Map data paths
     cdfArray = mapData(dataDirArray);
-
+    [location,session] = path2loc(cdfArray);
+    
     % Load data
     data = loadData(cdfArray);
+    data.location = location;
+    data.session = session;
     
     % Save data to file
     save(dataStore,'data');
 end
 
-% Extract variables from table
-cs = cell2mat(data.cs);
-work = cell2mat(data.work);
-bed = cell2mat(data.bed);
-cs_work = cs(work);
-cs_waking = cs(~bed);
-cs_nonwork_waking = cs(~bed & ~work);
-
 % Plot data
-plotHist(cs_work,'During Work Hours');
-plotHist(cs_waking,'During Waking Hours');
-plotHist(cs_nonwork_waking,'During Non-Work Waking Hours');
+plotHist(data.cs_work,'During Work Hours');
+plotHist(data.cs_waking,'During Waking Hours');
+plotHist(data.cs_nonwork_waking,'During Non-Work Waking Hours');
 
 end
 
@@ -51,23 +46,18 @@ binEdges = 0:0.01:0.7;
 hHist = histogram(hAx,cs,...
     'BinLimits',binLimits,...
     'BinEdges',binEdges,...
-    'Normalization','probability');
+    'Normalization','count');
 
 hAx.Box = 'off';
 hAx.TickDir = 'out';
-hAx.YLim = [0,0.3];
-hAx.YTick = 0:0.05:0.3;
+%hAx.YLim = [0,0.3];
+%hAx.YTick = 0:0.05:0.3;
 
-title(hAx,{'Distribution of Circadian Stimulus (CS):';histTitle});
-xlabel(hAx,'Circadian Stimulus (CS)');
-ylabel(hAx,'Probability');
+title(hAx,{'Distribution of Mean Circadian Stimulus (CS):';histTitle});
+xlabel(hAx,'Mean Circadian Stimulus (CS)');
+ylabel(hAx,'Number of Subjects');
 
-yTickLabel = cellstr(num2str(hAx.YTick'*100)); 
-pct = char(ones(size(yTickLabel,1),1)*'%');
-yTickLabel = [char(yTickLabel),pct];
-hAx.YTickLabel = yTickLabel;
-
-saveas(hFig,[histTitle,'.jpg']);
+saveas(hFig,['Mean CS ',histTitle,'.jpg']);
 end
 
 %% MARK: Read files
@@ -75,28 +65,25 @@ end
 function data = loadData(cdfArray)
 
 nCdf = numel(cdfArray);
-temp = cell(nCdf,1);
-vnames = {'subjectId','location','session','time','cs','work','bed'};
-data = table(temp,temp,temp,temp,temp,temp,temp,'VariableNames',vnames);
+tempCell = cell(nCdf,1);
+tempMat = NaN(nCdf,1);
+vnames = {'location','session','subjectId','cs_work','cs_waking','cs_nonwork_waking'};
+data = table(tempCell,tempCell,tempCell,tempMat,tempMat,tempMat,'VariableNames',vnames);
 
 for iCdf = 1:nCdf
     thisCdf = cdfArray{iCdf};
-    [subjectId,location,session,time,cs,work,bed] = prepData(thisCdf);
+    [subjectId,~,cs,work,bed] = prepData(thisCdf);
     data.subjectId{iCdf} = subjectId;
-    data.location{iCdf} = location;
-    data.session{iCdf} = session;
-    data.time{iCdf} = time;
-    data.cs{iCdf} = cs;
-    data.work{iCdf} = work;
-    data.bed{iCdf} = bed;
+    
+    data.cs_work(iCdf) = mean(cs(work));
+    data.cs_waking(iCdf) = mean(cs(~bed));
+    data.cs_nonwork_waking(iCdf) = mean(cs(~bed & ~work));
 end
 
 
 end
 
-function [subjectId,location,session,time,cs,work,bed] = prepData(cdfPath)
-
-[location,session] = decomposePath(cdfPath);
+function [subjectId,time,cs,work,bed] = prepData(cdfPath)
 
 rawData = daysimeter12.readcdf(cdfPath);
 
@@ -180,7 +167,7 @@ end
 
 %% MARK: File path mapping
 
-function [dataDirArray,locationArray,sessionArray] = mapDirs
+function dataDirArray = mapDirs
 
 GSADir = '\\ROOT\projects\GSA_Daysimeter';
 
@@ -195,16 +182,9 @@ buildingBase = {
 
 buildingDir = fullfile(GSADir,buildingBase);
 
-
-
 summerDir = fullfile(buildingDir,'summer');
 winterDir = fullfile(buildingDir,'winter');
 seasonDir = [summerDir;winterDir];
-
-locationArray = {'DC-1800F','DC-ROB','Seattle-1201','Seattle-1202','Grand Junction','Portland'}';
-
-sessionArray = [repmat({'summer'},size(locationArray));repmat({'winter'},size(locationArray))];
-locationArray = [locationArray;locationArray];
 
 dataDirArray = fullfile(seasonDir,'croppedData');
 
@@ -212,8 +192,6 @@ tfDir = dirDoesExist(dataDirArray);
 if any(~tfDir)
     warning('Missing directories removed from list.');
     dataDirArray(~tfDir) = [];
-    sessionArray(~tfDir) = [];
-    locationArray(~tfDir) = [];
 end
 
 end
@@ -265,31 +243,30 @@ end
 
 end
 
-function [location,session] = decomposePath(filePath)
+function [location,session] = path2loc(cdfArray)
+f = @(C)strsplit(C,filesep);
+parts = cellfun(f,cdfArray,'UniformOutput',false);
 
-splitPath = regexp(filePath,['\',filesep],'split');
+location = cell(size(cdfArray));
+session = cell(size(cdfArray));
 
-switch splitPath{6}
-    case 'WashingtonDC'
-        location = 'DC-1800F';
-        session = splitPath{8};
-    case 'WashingtonDC-RegionalOfficeBldg-7th&Dstreet'
-        location = 'DC-ROB';
-        session = splitPath{8};
-    case 'Seattle_Washington'
-        switch splitPath{8}
-            case 'FCS_Building_1201'
-                location = 'Seattle-1201';
-            case 'FCS_Building_1202'
-                location = 'Seattle-1202';
-        end
-        session = splitPath{9};
-    case 'GrandJunction_Colorado_site_data'
-        location = 'Grand Junction';
-        session = splitPath{8};
-    case 'Portland_Oregon_site_data'
-        location = 'Portland';
-        session = splitPath{8};
+for iC = 1:numel(cdfArray)
+    theseParts = parts{iC};
+    if numel(theseParts) == 10
+        location{iC} = theseParts{7};
+        session{iC} = theseParts{8};
+    elseif numel(theseParts) == 9
+        location{iC} = theseParts{5};
+        session{iC} = theseParts{7};
+    else
+        error('Unknown file pattern');
+    end
 end
 
+location = regexprep(location,'^WashingtonDC$','DC 1800F','ignorecase');
+location = regexprep(location,'^WashingtonDC-RegionalOfficeBldg-7th&Dstreet$','DC ROB','ignorecase');
+location = regexprep(location,'^FCS_Building_1201$','Seattle FCS 1201','ignorecase');
+location = regexprep(location,'^FCS_Building_1202$','Seattle FCS 1202','ignorecase');
+location = regexprep(location,'^GrandJunction_Colorado_site_data$','Grand Junction','ignorecase');
+location = regexprep(location,'^Portland_Oregon_site_data$','Portland','ignorecase');
 end
